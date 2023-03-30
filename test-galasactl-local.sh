@@ -8,7 +8,7 @@
 # Where is this script executing from ?
 BASEDIR=$(dirname "$0");pushd $BASEDIR 2>&1 >> /dev/null ;BASEDIR=$(pwd);popd 2>&1 >> /dev/null
 export ORIGINAL_DIR=$(pwd)
-cd "${BASEDIR}"
+cd "${BASEDIR}/.."
 
 
 #--------------------------------------------------------------------------
@@ -106,9 +106,9 @@ fi
 function galasa_home_init {
     h2 "Initialising galasa home directory"
 
-    cd ${BASEDIR}/temp
+    cd ${BASEDIR}/../temp
 
-    cmd="${BASEDIR}/bin/${binary} local init \
+    cmd="${BASEDIR}/../bin/${binary} local init \
     --log -"
 
     info "Command is: $cmd"
@@ -127,10 +127,10 @@ function galasa_home_init {
 function generate_sample_code {
     h2 "Invoke the tool to create a sample project."
 
-    cd $BASEDIR/temp
+    cd ${BASEDIR}/../temp
 
     export PACKAGE_NAME="dev.galasa.example.banking"
-    ${BASEDIR}/bin/galasactl-darwin-amd64 project create --package ${PACKAGE_NAME} --features payee,account --obr --maven --gradle --force
+    ${BASEDIR}/../bin/galasactl-darwin-amd64 project create --package ${PACKAGE_NAME} --features payee,account --obr --maven --gradle --force
     rc=$?
     if [[ "${rc}" != "0" ]]; then
         error " Failed to create the galasa test project using galasactl command. rc=${rc}"
@@ -143,7 +143,7 @@ function generate_sample_code {
 # Now build the source it created using maven
 function build_generated_source_maven {
     h2 "Building the sample project we just generated."
-    cd ${BASEDIR}/temp/${PACKAGE_NAME}
+    cd ${BASEDIR}/../temp/${PACKAGE_NAME}
     mvn clean test install 
     rc=$?
     if [[ "${rc}" != "0" ]]; then
@@ -157,7 +157,7 @@ function build_generated_source_maven {
 # Now build the source it created using gradle
 function build_generated_source_gradle {
     h2 "Building the sample project we just generated."
-    cd ${BASEDIR}/temp/${PACKAGE_NAME}
+    cd ${BASEDIR}/../temp/${PACKAGE_NAME}
     gradle build publishToMavenLocal
     rc=$?
     if [[ "${rc}" != "0" ]]; then
@@ -173,7 +173,7 @@ function submit_local_test {
 
     h2 "Submitting a local test using galasactl in a local JVM"
 
-    cd ${BASEDIR}/temp/*banking
+    cd ${BASEDIR}/../temp/*banking
 
     BUNDLE=$1
     JAVA_CLASS=$2
@@ -197,7 +197,7 @@ function submit_local_test {
     # else go to maven central
     #export REMOTE_MAVEN=https://repo.maven.apache.org/maven2
 
-    export GALASACTL="${BASEDIR}/bin/${binary}"
+    export GALASACTL="${BASEDIR}/../bin/${binary}"
 
     ${GALASACTL} runs submit local \
     --obr mvn:${OBR_GROUP_ID}/${OBR_ARTIFACT_ID}/${OBR_VERSION}/obr \
