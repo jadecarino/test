@@ -131,7 +131,7 @@ function generate_sample_code {
     cd ${BASEDIR}/../temp
 
     export PACKAGE_NAME="dev.galasa.example.banking"
-    ${BASEDIR}/../bin/galasactl-darwin-amd64 project create --package ${PACKAGE_NAME} --features payee,account --obr --maven --gradle --force
+    ${BASEDIR}/../bin/${binary} project create --package ${PACKAGE_NAME} --features payee,account --obr --maven --gradle --force
     rc=$?
     if [[ "${rc}" != "0" ]]; then
         error " Failed to create the galasa test project using galasactl command. rc=${rc}"
@@ -181,14 +181,12 @@ function submit_local_test {
     OBR_GROUP_ID=$3
     OBR_ARTIFACT_ID=$4
     OBR_VERSION=$5
-    LOG_FILE=$6
 
     # Could get this bootjar from https://development.galasa.dev/main/maven-repo/obr/dev/galasa/galasa-boot/0.26.0/
     export BOOT_JAR_VERSION="0.26.0"
 
     export GALASA_VERSION="0.26.0"
 
-    export M2_PATH=$(cd ~/.m2 ; pwd)
     export BOOT_JAR_PATH=~/.galasa/lib/${GALASA_VERSION}/galasa-boot-${BOOT_JAR_VERSION}.jar
 
 
