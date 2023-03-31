@@ -57,7 +57,7 @@ note() { printf "\n${underline}${bold}${blue}Note:${reset} ${blue}%s${reset}\n" 
 # Functions
 #-----------------------------------------------------------------------------------------                   
 function usage {
-    info "Syntax: test-galasactl-local.sh [OPTIONS]"
+    info "Syntax: test-galasactl-local.sh --binary [OPTIONS]"
     cat << EOF
 Options are:
 galasactl-darwin-amd64 : Use the galasactl-darwin-amd64 binary
@@ -75,15 +75,8 @@ binary=""
 
 while [ "$1" != "" ]; do
     case $1 in
-        galasactl-darwin-amd64 )          binary="galasactl-darwin-amd64"
-                                          ;;
-        galasactl-darwin-arm64 )          binary="galasactl-darwin-arm64"
-                                          ;;
-        galasactl-linux-amd64 )           binary="galasactl-linux-amd64"
-                                          ;;
-        galasactl-linux-s390x )           binary="galasactl-linux-s390x"
-                                          ;;
-        galasactl-windows-amd64.exe )     binary="galasactl-windows-amd64.exe"
+        --binary )                        shift
+                                          binary="$1"
                                           ;;
         -h | --help )                     usage
                                           exit
@@ -95,7 +88,23 @@ while [ "$1" != "" ]; do
     shift
 done
 
-if [[ "${binary}" == "" ]]; then
+if [[ "${binary}" != "" ]]; then
+    case ${binary} in
+        galasactl-darwin-amd64 )            echo "Using the galasactl-darwin-amd64 binary"
+                                            ;;
+        galasactl-darwin-arm64 )            echo "Using the galasactl-darwin-arm64 binary"
+                                            ;;
+        galasactl-linux-amd64 )             echo "Using the galasactl-linux-amd64 binary"
+                                            ;;
+        galasactl-linux-s390x )             echo "Using the galasactl-linux-s390x binary"
+                                            ;;
+        galasactl-windows-amd64.exe )       echo "Using the galasactl-windows-amd64.exe binary"
+                                            ;;
+        * )                                 error "Unrecognised galasactl binary ${binary}"
+                                            usage
+                                            exit 1
+    esac
+else
     error "Need to specify which binary of galasactl to use."
     usage
     exit 1  
