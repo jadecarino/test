@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "Running script test-galasactl-local.sh"
+echo "Running script test-galasactl-local-maven.sh"
 
 # This script can be ran locally or executed in a pipeline to test the various built binaries of galasactl
 # This script tests the 'galasactl project create' and 'galasactl runs submit local' commands
@@ -142,7 +142,7 @@ function generate_sample_code {
     cd ${BASEDIR}/../temp
 
     export PACKAGE_NAME="dev.galasa.example.banking"
-    ${BASEDIR}/../bin/${binary} project create --package ${PACKAGE_NAME} --features payee,account --obr --maven --gradle --force
+    ${BASEDIR}/../bin/${binary} project create --package ${PACKAGE_NAME} --features payee,account --obr --maven --force
     rc=$?
     if [[ "${rc}" != "0" ]]; then
         error " Failed to create the galasa test project using galasactl command. rc=${rc}"
@@ -157,20 +157,6 @@ function build_generated_source_maven {
     h2 "Building the sample project we just generated."
     cd ${BASEDIR}/../temp/${PACKAGE_NAME}
     mvn clean test install 
-    rc=$?
-    if [[ "${rc}" != "0" ]]; then
-        error " Failed to build the generated source code which galasactl created."
-        exit 1
-    fi
-    success "OK"
-}
-
-#--------------------------------------------------------------------------
-# Now build the source it created using gradle
-function build_generated_source_gradle {
-    h2 "Building the sample project we just generated."
-    cd ${BASEDIR}/../temp/${PACKAGE_NAME}
-    gradle build publishToMavenLocal
     rc=$?
     if [[ "${rc}" != "0" ]]; then
         error " Failed to build the generated source code which galasactl created."
@@ -260,9 +246,3 @@ generate_sample_code
 cleanup_local_maven_repo
 build_generated_source_maven
 run_test_locally_using_galasactl
-
-# Gradle ...
-cleanup_local_maven_repo
-build_generated_source_gradle
-run_test_locally_using_galasactl
-
