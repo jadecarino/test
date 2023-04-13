@@ -142,7 +142,7 @@ function generate_sample_code {
     cd ${BASEDIR}/../temp
 
     export PACKAGE_NAME="dev.galasa.example.banking"
-    ${BASEDIR}/../bin/${binary} project create --package ${PACKAGE_NAME} --features payee,account --obr --gradle --force
+    ${BASEDIR}/../bin/${binary} project create --package ${PACKAGE_NAME} --features payee --obr --gradle --force
     rc=$?
     if [[ "${rc}" != "0" ]]; then
         error " Failed to create the galasa test project using galasactl command. rc=${rc}"
@@ -152,7 +152,7 @@ function generate_sample_code {
 }
 
 #--------------------------------------------------------------------------
-# Rewrite settings.gradle to allow Gradle to point to our remote maven repository
+# Rewrite gradle files to allow Gradle to point to our remote maven repository
 function rewrite_settings_gradle {
     h2 "Rewriting the settings.gradle file so Gradle can use our remote maven repository."
     cd ${BASEDIR}/../temp/${PACKAGE_NAME}
@@ -173,6 +173,49 @@ include 'dev.galasa.example.banking.account'
 include 'dev.galasa.example.banking.obr'
 EOF
 
+}
+
+function rewrite_build_gradle {
+    h2 "Rewriting the build.gradle file of the test project also."
+    cd ${BASEDIR}/../temp/${PACKAGE_NAME}/${PACKAGE_NAME}.payee
+
+    tee build.gradle << EOF
+plugins {
+    id 'java'
+    id 'maven-publish'
+    id 'biz.aQute.bnd.builder' version '6.4.0'
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven {
+      url 'https://development.galasa.dev/main/maven-repo/obr'
+    }
+}
+
+group = 'dev.galasa.example.banking'
+version = '0.0.1-SNAPSHOT'
+
+dependencies {
+    implementation platform('dev.galasa:galasa-bom:0.26.0')
+
+    implementation 'dev.galasa:dev.galasa'
+    implementation 'dev.galasa:dev.galasa.framework'
+    implementation 'dev.galasa:dev.galasa.core.manager'
+    implementation 'dev.galasa:dev.galasa.artifact.manager'
+    implementation 'commons-logging:commons-logging'
+    implementation 'org.assertj:assertj-core'
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from components.java
+        }
+    }
+}
+EOF
 }
 
 #--------------------------------------------------------------------------
@@ -262,5 +305,6 @@ generate_sample_code
 # Gradle ...
 cleanup_local_maven_repo
 rewrite_settings_gradle
+rewrite_build_gradle
 build_generated_source_gradle
 run_test_locally_using_galasactl

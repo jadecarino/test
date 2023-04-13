@@ -142,7 +142,7 @@ function generate_sample_code {
     cd ${BASEDIR}/../temp
 
     export PACKAGE_NAME="dev.galasa.example.banking"
-    ${BASEDIR}/../bin/${binary} project create --package ${PACKAGE_NAME} --features payee,account --obr --maven --force
+    ${BASEDIR}/../bin/${binary} project create --package ${PACKAGE_NAME} --features payee --obr --maven --force
     rc=$?
     if [[ "${rc}" != "0" ]]; then
         error " Failed to create the galasa test project using galasactl command. rc=${rc}"
