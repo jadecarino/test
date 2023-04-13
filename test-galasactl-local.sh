@@ -74,11 +74,15 @@ EOF
 # Process parameters
 #-----------------------------------------------------------------------------------------                   
 binary=""
+buildTool=""
 
 while [ "$1" != "" ]; do
     case $1 in
         --binary )                        shift
                                           binary="$1"
+                                          ;;
+        --buildTool )                    shift
+                                          buildTool="$1"
                                           ;;
         -h | --help )                     usage
                                           exit
@@ -108,6 +112,22 @@ if [[ "${binary}" != "" ]]; then
     esac
 else
     error "Need to specify which binary of galasactl to use."
+    usage
+    exit 1  
+fi
+
+if [[ "${buildTool}" != "" ]]; then
+    case ${buildTool} in
+        maven  )            echo "Using Maven"
+                            ;;
+        gradle )            echo "Using Gradle"
+                            ;;
+        * )                 error "Unrecognised build tool ${buildTool}"
+                            usage
+                            exit 1
+    esac
+else
+    error "Need to specify which build tool to use to build the generated project."
     usage
     exit 1  
 fi
@@ -142,7 +162,7 @@ function generate_sample_code {
     cd ${BASEDIR}/../temp
 
     export PACKAGE_NAME="dev.galasa.example.banking"
-    ${BASEDIR}/../bin/${binary} project create --package ${PACKAGE_NAME} --features payee,account --obr --maven --gradle --force
+    ${BASEDIR}/../bin/${binary} project create --package ${PACKAGE_NAME} --features payee --obr --${buildTool} --force
     rc=$?
     if [[ "${rc}" != "0" ]]; then
         error " Failed to create the galasa test project using galasactl command. rc=${rc}"
@@ -152,25 +172,197 @@ function generate_sample_code {
 }
 
 #--------------------------------------------------------------------------
-# Now build the source it created using maven
-function build_generated_source_maven {
-    h2 "Building the sample project we just generated."
+# Rewrite pom.xml to allow Maven to point to our remote maven repository
+function rewrite_pom {
+    h2 "Rewriting the pom.xml file so Maven can use our remote maven repository."
     cd ${BASEDIR}/../temp/${PACKAGE_NAME}
-    mvn clean test install 
-    rc=$?
-    if [[ "${rc}" != "0" ]]; then
-        error " Failed to build the generated source code which galasactl created."
-        exit 1
-    fi
-    success "OK"
+
+    tee pom.xml << EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>dev.galasa.example.banking</groupId>
+	<artifactId>dev.galasa.example.banking</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+  	<packaging>pom</packaging>
+  	<name>dev.galasa.example.banking</name>
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+		<java.version>11</java.version>
+		<maven.compiler.source>11</maven.compiler.source>
+		<maven.compiler.target>11</maven.compiler.target>
+		<maven.build.timestamp.format>yyyyMMddHHmm</maven.build.timestamp.format>
+		<unpackBundle>true</unpackBundle>
+	</properties>
+	<modules>
+		<module>dev.galasa.example.banking.payee</module>
+		<module>dev.galasa.example.banking.obr</module>
+	</modules>
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>dev.galasa</groupId>
+				<artifactId>galasa-bom</artifactId>
+				<version>0.27.0</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+	<dependencies>
+		<dependency>
+			<groupId>dev.galasa</groupId>
+			<artifactId>dev.galasa</artifactId>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>dev.galasa</groupId>
+			<artifactId>dev.galasa.core.manager</artifactId>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>dev.galasa</groupId>
+			<artifactId>dev.galasa.artifact.manager</artifactId>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.assertj</groupId>
+			<artifactId>assertj-core</artifactId>
+		</dependency>
+	</dependencies>	
+	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.apache.felix</groupId>
+					<artifactId>maven-bundle-plugin</artifactId>
+					<version>4.1.0</version>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-plugin-plugin</artifactId>
+					<version>3.6.0</version>
+				</plugin>
+				<plugin>
+					<groupId>dev.galasa</groupId>
+					<artifactId>galasa-maven-plugin</artifactId>
+					<version>0.20.0</version>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.felix</groupId>
+				<artifactId>maven-bundle-plugin</artifactId>
+				<extensions>true</extensions>
+			</plugin>
+			<plugin>
+				<groupId>dev.galasa</groupId>
+				<artifactId>galasa-maven-plugin</artifactId>
+				<extensions>true</extensions>
+				<executions>
+					<execution>
+						<id>build-testcatalog</id>
+						<phase>package</phase>
+						<goals>
+						<goal>bundletestcat</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+    <repositories>
+        <repository>
+            <id>galasa.repo</id>
+            <url>https://development.galasa.dev/main/maven-repo/obr</url>
+        </repository>
+    </repositories>
+</project>
+EOF
+
 }
 
 #--------------------------------------------------------------------------
-# Now build the source it created using gradle
-function build_generated_source_gradle {
+# Rewrite gradle files to allow Gradle to point to our remote maven repository
+function rewrite_settings_gradle {
+    h2 "Rewriting the settings.gradle file so Gradle can use our remote maven repository."
+    cd ${BASEDIR}/../temp/${PACKAGE_NAME}
+
+    tee settings.gradle << EOF
+pluginManagement {
+	repositories {
+		mavenLocal()
+		mavenCentral()
+		maven {
+        	url 'https://development.galasa.dev/main/maven-repo/obr'
+		}
+	    gradlePluginPortal()
+	}
+}
+include 'dev.galasa.example.banking.payee'
+include 'dev.galasa.example.banking.account'
+include 'dev.galasa.example.banking.obr'
+EOF
+
+}
+
+function rewrite_build_gradle {
+    h2 "Rewriting the build.gradle file of the test project also."
+    cd ${BASEDIR}/../temp/${PACKAGE_NAME}/${PACKAGE_NAME}.payee
+
+    tee build.gradle << EOF
+plugins {
+    id 'java'
+    id 'maven-publish'
+    id 'biz.aQute.bnd.builder' version '6.4.0'
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven {
+      url 'https://development.galasa.dev/main/maven-repo/obr'
+    }
+}
+
+group = 'dev.galasa.example.banking'
+version = '0.0.1-SNAPSHOT'
+
+dependencies {
+    implementation platform('dev.galasa:galasa-bom:0.26.0')
+
+    implementation 'dev.galasa:dev.galasa'
+    implementation 'dev.galasa:dev.galasa.framework'
+    implementation 'dev.galasa:dev.galasa.core.manager'
+    implementation 'dev.galasa:dev.galasa.artifact.manager'
+    implementation 'commons-logging:commons-logging'
+    implementation 'org.assertj:assertj-core'
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from components.java
+        }
+    }
+}
+EOF
+}
+
+#--------------------------------------------------------------------------
+# Now build the source it created
+function build_generated_source {
     h2 "Building the sample project we just generated."
     cd ${BASEDIR}/../temp/${PACKAGE_NAME}
-    gradle build publishToMavenLocal
+
+    if [[ "${buildTool}" == "maven" ]]; then
+        mvn clean test install
+    elif [[ "${buildTool}" == "gradle" ]]; then
+        gradle clean build publishToMavenLocal
+    fi
+
     rc=$?
     if [[ "${rc}" != "0" ]]; then
         error " Failed to build the generated source code which galasactl created."
@@ -256,13 +448,16 @@ galasa_home_init
 # Generate sample project ...
 generate_sample_code
 
-# Maven ...
-cleanup_local_maven_repo
-build_generated_source_maven
-run_test_locally_using_galasactl
+if [[ "${buildTool}" == "maven" ]]; then
+    cleanup_local_maven_repo
+    rewrite_pom
+    build_generated_source
+elif [[ "${buildTool}" == "gradle" ]]; then
+    cleanup_local_maven_repo
+    rewrite_settings_gradle
+    rewrite_build_gradle
+    build_generated_source
+fi
 
-# Gradle ...
-cleanup_local_maven_repo
-build_generated_source_gradle
 run_test_locally_using_galasactl
 
