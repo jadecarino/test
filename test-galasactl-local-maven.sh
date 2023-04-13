@@ -177,7 +177,6 @@ function rewrite_pom {
 	</properties>
 	<modules>
 		<module>dev.galasa.example.banking.payee</module>
-		<module>dev.galasa.example.banking.account</module>
 		<module>dev.galasa.example.banking.obr</module>
 	</modules>
 	<dependencyManagement>
@@ -185,12 +184,12 @@ function rewrite_pom {
 			<dependency>
 				<groupId>dev.galasa</groupId>
 				<artifactId>galasa-bom</artifactId>
-				<version>0.26.0</version>
+				<version>0.27.0</version>
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
 		</dependencies>
-	</dependencyManagement>	
+	</dependencyManagement>
 	<dependencies>
 		<dependency>
 			<groupId>dev.galasa</groupId>
