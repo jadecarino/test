@@ -300,17 +300,13 @@ function submit_local_test {
 
     export BOOT_JAR_PATH=~/.galasa/lib/${GALASA_VERSION}/galasa-boot-${BOOT_JAR_VERSION}.jar
 
-
-    # Local .m2 content over-rides these anyway...
-    # use development version of the OBR
     export REMOTE_MAVEN=https://development.galasa.dev/main/maven-repo/obr/
-    # else go to maven central
-    #export REMOTE_MAVEN=https://repo.maven.apache.org/maven2
 
     export GALASACTL="${BASEDIR}/../bin/${binary}"
 
     ${GALASACTL} runs submit local \
     --obr mvn:${OBR_GROUP_ID}/${OBR_ARTIFACT_ID}/${OBR_VERSION}/obr \
+    --remoteMaven ${REMOTE_MAVEN} \
     --class ${BUNDLE}/${JAVA_CLASS} \
     --throttle 1 \
     --requesttype automated-test \
@@ -320,9 +316,6 @@ function submit_local_test {
 
     # Uncomment this if testing that a test that should fail, fails
     # --noexitcodeontestfailures \
-
-    # --remoteMaven https://development.galasa.dev/main/maven-repo/obr/ \
-    # --galasaVersion 0.26.0 \
 
     rc=$?
     if [[ "${rc}" != "0" ]]; then 
