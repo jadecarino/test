@@ -163,7 +163,7 @@ pluginManagement {
 		mavenLocal()
 		mavenCentral()
 		maven {
-        	url = 'https://development.galasa.dev/main/maven-repo/obr'
+        	url 'https://development.galasa.dev/main/maven-repo/obr'
 		}
 	    gradlePluginPortal()
 	}
