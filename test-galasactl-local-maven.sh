@@ -152,6 +152,120 @@ function generate_sample_code {
 }
 
 #--------------------------------------------------------------------------
+# Rewrite pom.xml to allow Maven to point to our remote maven repository
+function rewrite_pom {
+    h2 "Rewriting the pom.xml file so Maven can use our remote maven repository."
+    cd ${BASEDIR}/../temp/${PACKAGE_NAME}
+
+    tee pom.xml << EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>dev.galasa.example.banking</groupId>
+	<artifactId>dev.galasa.example.banking</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+  	<packaging>pom</packaging>
+  	<name>dev.galasa.example.banking</name>
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+		<java.version>11</java.version>
+		<maven.compiler.source>11</maven.compiler.source>
+		<maven.compiler.target>11</maven.compiler.target>
+		<maven.build.timestamp.format>yyyyMMddHHmm</maven.build.timestamp.format>
+		<unpackBundle>true</unpackBundle>
+	</properties>
+	<modules>
+		<module>dev.galasa.example.banking.payee</module>
+		<module>dev.galasa.example.banking.account</module>
+		<module>dev.galasa.example.banking.obr</module>
+	</modules>
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>dev.galasa</groupId>
+				<artifactId>galasa-bom</artifactId>
+				<version>0.26.0</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>	
+	<dependencies>
+		<dependency>
+			<groupId>dev.galasa</groupId>
+			<artifactId>dev.galasa</artifactId>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>dev.galasa</groupId>
+			<artifactId>dev.galasa.core.manager</artifactId>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>dev.galasa</groupId>
+			<artifactId>dev.galasa.artifact.manager</artifactId>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.assertj</groupId>
+			<artifactId>assertj-core</artifactId>
+		</dependency>
+	</dependencies>	
+	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.apache.felix</groupId>
+					<artifactId>maven-bundle-plugin</artifactId>
+					<version>4.1.0</version>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-plugin-plugin</artifactId>
+					<version>3.6.0</version>
+				</plugin>
+				<plugin>
+					<groupId>dev.galasa</groupId>
+					<artifactId>galasa-maven-plugin</artifactId>
+					<version>0.20.0</version>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.felix</groupId>
+				<artifactId>maven-bundle-plugin</artifactId>
+				<extensions>true</extensions>
+			</plugin>
+			<plugin>
+				<groupId>dev.galasa</groupId>
+				<artifactId>galasa-maven-plugin</artifactId>
+				<extensions>true</extensions>
+				<executions>
+					<execution>
+						<id>build-testcatalog</id>
+						<phase>package</phase>
+						<goals>
+						<goal>bundletestcat</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+    <repositories>
+        <repository>
+            <id>galasa.repo</id>
+            <url>https://development.galasa.dev/main/maven-repo/obr</url>
+        </repository>
+    </repositories>
+</project>
+EOF
+
+}
+
+#--------------------------------------------------------------------------
 # Now build the source it created using maven
 function build_generated_source_maven {
     h2 "Building the sample project we just generated."
@@ -244,5 +358,6 @@ generate_sample_code
 
 # Maven ...
 cleanup_local_maven_repo
+rewrite_pom
 build_generated_source_maven
 run_test_locally_using_galasactl
