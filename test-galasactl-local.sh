@@ -141,7 +141,7 @@ function galasa_home_init {
     mkdir -p ${BASEDIR}/../temp
     cd ${BASEDIR}/../temp
 
-    cmd="${BASEDIR}/../bin/${binary} local init \
+    cmd="${BASEDIR}/../bin/${binary} local init --development \
     --log -"
 
     info "Command is: $cmd"
@@ -163,7 +163,7 @@ function generate_sample_code {
     cd ${BASEDIR}/../temp
 
     export PACKAGE_NAME="dev.galasa.example.banking"
-    ${BASEDIR}/../bin/${binary} project create --package ${PACKAGE_NAME} --features payee --obr --${buildTool} --force
+    ${BASEDIR}/../bin/${binary} project create --package ${PACKAGE_NAME} --features payee --obr --${buildTool} --force --development
     rc=$?
     if [[ "${rc}" != "0" ]]; then
         error " Failed to create the galasa test project using galasactl command. rc=${rc}"
