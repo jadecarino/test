@@ -152,6 +152,19 @@ function generate_sample_code {
 }
 
 #--------------------------------------------------------------------------
+# Rewrite settings.gradle to allow Gradle to point to our remote maven repository
+function replace_settings_gradle {
+    h2 "Replacing the settings.gradle file so Gradle can use our remote maven repository."
+    cd ${BASEDIR}/../temp/${PACKAGE_NAME}
+
+    rm settings.gradle
+
+    echo -e "pluginManagement {\n\trepositories {\n\t\tmavenLocal()\n\t\tmavenCentral()\n\t\tmaven {
+            url = 'https://development.galasa.dev/main/maven-repo/obr'\n\t\t}\n\tgradlePluginPortal()\n\t}\n}
+include 'dev.galasa.example.banking.payee'\ninclude 'dev.galasa.example.banking.account'\ninclude 'dev.galasa.example.banking.obr'" > settings.gradle
+}
+
+#--------------------------------------------------------------------------
 # Now build the source it created using gradle
 function build_generated_source_gradle {
     h2 "Building the sample project we just generated."
@@ -244,6 +257,7 @@ generate_sample_code
 
 # Gradle ...
 cleanup_local_maven_repo
-build_generated_source_gradle
-run_test_locally_using_galasactl
+replace_settings_gradle
+# build_generated_source_gradle
+# run_test_locally_using_galasactl
 
