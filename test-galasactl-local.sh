@@ -276,7 +276,7 @@ function rewrite_pom {
 	</build>
     <repositories>
         <repository>
-            <id>galasa.repo</id>
+            <id>galasa.dev.repo</id>
             <url>https://development.galasa.dev/main/maven-repo/obr</url>
         </repository>
     </repositories>
